@@ -8,6 +8,7 @@
 		"build": "electron-builder",
 		"build:win": "electron-builder --win",
 		"build:mac": "electron-builder --mac",
+		"pack:win": "electron-packager . Chinese-Converter --platform=win32 --arch=x64 --out=dist --overwrite",
 		"build:linux": "electron-builder --linux",
 		"start": "pnpm run dev"
 	},
@@ -31,7 +32,7 @@
 	},
 	"build": {
 		"appId": "com.example.simplified-traditional-chinese-translator",
-		"productName": "简繁转换工具",
+		"productName": "Chinese-Converter",
 		"directories": {
 			"output": "dist"
 		},
@@ -40,30 +41,20 @@
 			"node_modules/**/*"
 		],
 		"win": {
-			"target": [
-				{
-					"target": "nsis",
-					"arch": [
-						"x64",
-						"ia32"
-					]
-				},
-				{
-					"target": "dir",
-					"arch": [
-						"x64",
-						"ia32"
-					]
-				}
-			],
-			"artifactName": "${productName}-${version}-win-${arch}.${ext}"
+			"target": "dir",
+			"artifactName": "${productName}-${version}-win-${arch}"
 		},
 		"nsis": {
 			"oneClick": false,
 			"allowToChangeInstallationDirectory": true,
 			"createDesktopShortcut": true,
 			"createStartMenuShortcut": true,
-			"shortcutName": "简繁转换工具"
+			"shortcutName": "Chinese Converter",
+			"displayLanguageSelector": true,
+			"installerLanguages": [
+				"en_US",
+				"zh_CN"
+			]
 		},
 		"mac": {
 			"target": [
@@ -83,7 +74,8 @@
 				}
 			],
 			"category": "public.app-category.productivity",
-			"artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+			"artifactName": "${productName}-${version}-mac-${arch}.${ext}",
+			"icon": "assets/icon.png"
 		},
 		"linux": {
 			"target": "AppImage",

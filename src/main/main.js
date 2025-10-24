@@ -49,7 +49,7 @@ app.on("activate", () => {
 // 初始化简繁转换器
 const converters = {
 	s2t: OpenCC.Converter({ from: "cn", to: "tw" }), // 简体转繁体
-	t2s: OpenCC.Converter({ from: "tw", to: "cn" })  // 繁体转简体
+	t2s: OpenCC.Converter({ from: "tw", to: "cn" }), // 繁体转简体
 };
 
 // 获取转换器
@@ -165,7 +165,7 @@ async function getAllFiles(dirPath) {
 }
 
 // 转换单个文件
-async function convertFile(filePath, direction = 's2t') {
+async function convertFile(filePath, direction = "s2t") {
 	try {
 		const content = await fs.readFile(filePath, "utf8");
 		const converter = getConverter(direction);
@@ -194,8 +194,9 @@ ipcMain.handle("select-folder", async () => {
 ipcMain.handle("convert-project", async (event, options) => {
 	try {
 		// 兼容旧版本调用方式
-		const projectPath = typeof options === 'string' ? options : options.path;
-		const direction = typeof options === 'string' ? 's2t' : (options.direction || 's2t');
+		const projectPath = typeof options === "string" ? options : options.path;
+		const direction =
+			typeof options === "string" ? "s2t" : options.direction || "s2t";
 
 		// 获取所有文件
 		const files = await getAllFiles(projectPath);
@@ -254,12 +255,12 @@ ipcMain.handle("convert-project", async (event, options) => {
 // 文本转换处理器
 ipcMain.handle("convert-text", async (event, options) => {
 	try {
-		const { text, direction = 's2t' } = options;
-		
-		if (!text || typeof text !== 'string') {
+		const { text, direction = "s2t" } = options;
+
+		if (!text || typeof text !== "string") {
 			return {
 				success: false,
-				error: "无效的文本输入"
+				error: "无效的文本输入",
 			};
 		}
 
@@ -268,13 +269,13 @@ ipcMain.handle("convert-text", async (event, options) => {
 
 		return {
 			success: true,
-			convertedText: convertedText
+			convertedText: convertedText,
 		};
 	} catch (error) {
 		console.error("文本转换失败:", error);
 		return {
 			success: false,
-			error: error.message
+			error: error.message,
 		};
 	}
 });
