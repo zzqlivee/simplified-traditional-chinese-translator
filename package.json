@@ -1,0 +1,93 @@
+{
+	"name": "simplified-traditional-chinese-translator",
+	"version": "1.0.0",
+	"description": "桌面应用：简繁转换工具",
+	"main": "src/main/main.js",
+	"scripts": {
+		"dev": "electron .",
+		"build": "electron-builder",
+		"build:win": "electron-builder --win",
+		"build:mac": "electron-builder --mac",
+		"build:linux": "electron-builder --linux",
+		"start": "pnpm run dev"
+	},
+	"keywords": [
+		"electron",
+		"vue",
+		"简繁转换",
+		"traditional-chinese",
+		"simplified-chinese"
+	],
+	"author": "Your Name",
+	"license": "MIT",
+	"devDependencies": {
+		"electron": "^27.0.0",
+		"electron-builder": "^24.6.4",
+		"electron-packager": "^17.1.2"
+	},
+	"dependencies": {
+		"opencc-js": "^1.0.5",
+		"vue": "^3.3.4"
+	},
+	"build": {
+		"appId": "com.example.simplified-traditional-chinese-translator",
+		"productName": "简繁转换工具",
+		"directories": {
+			"output": "dist"
+		},
+		"files": [
+			"src/**/*",
+			"node_modules/**/*"
+		],
+		"win": {
+			"target": [
+				{
+					"target": "nsis",
+					"arch": [
+						"x64",
+						"ia32"
+					]
+				},
+				{
+					"target": "dir",
+					"arch": [
+						"x64",
+						"ia32"
+					]
+				}
+			],
+			"artifactName": "${productName}-${version}-win-${arch}.${ext}"
+		},
+		"nsis": {
+			"oneClick": false,
+			"allowToChangeInstallationDirectory": true,
+			"createDesktopShortcut": true,
+			"createStartMenuShortcut": true,
+			"shortcutName": "简繁转换工具"
+		},
+		"mac": {
+			"target": [
+				{
+					"target": "dmg",
+					"arch": [
+						"x64",
+						"arm64"
+					]
+				},
+				{
+					"target": "dir",
+					"arch": [
+						"x64",
+						"arm64"
+					]
+				}
+			],
+			"category": "public.app-category.productivity",
+			"artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+		},
+		"linux": {
+			"target": "AppImage",
+			"icon": "assets/icon.png"
+		}
+	}
+}

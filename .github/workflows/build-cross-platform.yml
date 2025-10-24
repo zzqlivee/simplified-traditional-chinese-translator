@@ -1,0 +1,191 @@
+# GitHub Actions 工作流 - 跨平台自动打包
+# 支持 Windows 和 macOS 平台构建
+
+name: Build Cross Platform App
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        arch: [x64, ia32]
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "pnpm"
+
+      - name: 安装依赖
+        run: pnpm install
+
+      - name: 构建 Windows 应用 (${{ matrix.arch }})
+        run: pnpm run build:win -- --${{ matrix.arch }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 上传 Windows 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-app-${{ matrix.arch }}
+          path: |
+            dist/*.exe
+            dist/win-unpacked/
+          retention-days: 30
+
+      - name: 创建 Windows 发布 (仅标签推送)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.exe
+          draft: true
+          prerelease: contains(github.ref, 'beta') || contains(github.ref, 'alpha')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-mac:
+    runs-on: macos-latest
+
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "pnpm"
+
+      - name: 安装依赖
+        run: pnpm install
+
+      - name: 构建 macOS 应用 (${{ matrix.arch }})
+        run: pnpm run build:mac -- --${{ matrix.arch }}
+        env:
+          # 如果需要代码签名，添加以下环境变量
+          # APPLE_ID: ${{ secrets.APPLE_ID }}
+          # APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          # CSC_LINK: ${{ secrets.CSC_LINK }}
+          # CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 上传 macOS 构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-app-${{ matrix.arch }}
+          path: |
+            dist/*.dmg
+            dist/mac/*.app
+          retention-days: 30
+
+      - name: 创建 macOS 发布 (仅标签推送)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.dmg
+          draft: true
+          prerelease: contains(github.ref, 'beta') || contains(github.ref, 'alpha')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 创建通用分发包
+  create-universal-package:
+    needs: [build-windows, build-mac]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: 下载所有构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: 创建通用分发包
+        run: |
+          mkdir -p universal-package
+
+          # 复制 Windows 文件
+          find artifacts -name "*.exe" -exec cp {} universal-package/ \;
+
+          # 复制 macOS 文件
+          find artifacts -name "*.dmg" -exec cp {} universal-package/ \;
+
+          # 创建说明文件
+          cat > universal-package/安装说明.txt << 'EOF'
+          # 简繁转换工具 - 跨平台版本
+
+          ## Windows 版本选择：
+          - **64位 Windows**：选择包含 "x64" 的 EXE 文件
+          - **32位 Windows**：选择包含 "ia32" 的 EXE 文件
+
+          ## macOS 版本选择：
+          - **Intel Mac (x64)**：选择包含 "x64" 的 DMG 文件
+          - **Apple Silicon Mac (arm64)**：选择包含 "arm64" 的 DMG 文件
+
+          ## Windows 安装步骤：
+          1. 双击对应的 EXE 文件
+          2. 按照安装向导完成安装
+          3. 安装完成后可在开始菜单找到应用
+
+          ## macOS 安装步骤：
+          1. 双击对应的 DMG 文件
+          2. 将应用拖拽到 Applications 文件夹
+          3. 首次运行可能需要在系统偏好设置中允许运行
+
+          ## 功能特性：
+          - 支持简体中文与繁体中文互相转换
+          - 支持文件夹批量转换
+          - 支持文本直接转换
+          - 支持多种编程语言和文档格式
+
+          ## 技术支持：
+          如遇到问题，请访问项目主页获取帮助。
+          EOF
+
+          # 显示文件列表
+          ls -la universal-package/
+
+      - name: 上传通用分发包
+        uses: actions/upload-artifact@v4
+        with:
+          name: universal-package
+          path: universal-package/
+          retention-days: 90
+
+      - name: 添加通用包到发布
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: universal-package/*
+          draft: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
